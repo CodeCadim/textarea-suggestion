@@ -17,10 +17,14 @@
 				selection++;
 		} else if (k.key == "ArrowUp" && value != null && selection > 0)
 			selection--;
-		else if (k.key == "Tab" && selection > -1) {
-			value = suggestions[selection];
-			exit();
-		} else if (!show) show = true;
+		else if (k.key == "Tab" && selection > -1) choose(selection);
+		else if (!show) show = true;
+	};
+
+	const choose = (idx) => {
+		console.log("DEBUG choose", idx);
+		value = suggestions[idx];
+		exit();
 	};
 
 	const exit = () => {
@@ -35,21 +39,29 @@ currentSelection:{selection}
 suggestionsList.length:{suggestions && suggestions.length}
 </pre>
 
-<textarea bind:value onkeydown={key} onblur={exit}></textarea>
-{#if show}
-	<div class="suggestions">
-		{#each suggestions as item, idx}
-			<pre class:selected={idx == selection}>{item}</pre>
-		{/each}
-	</div>
-{/if}
-<hr />
+<main>
+	<textarea bind:value onkeydown={key}></textarea>
+	{#if show}
+		<div class="suggestions">
+			{#each suggestions as item, idx}
+				<pre
+					class:selected={idx == selection}
+					onclick={() => choose(idx)}>{item}</pre>
+			{/each}
+		</div>
+	{/if}
+</main>
 
 <style>
+	main {
+		position: relative;
+	}
 	.suggestions {
+		position: absolute;
 		background-color: var(--gray-300);
 	}
 	.suggestions pre {
+		cursor: pointer;
 		border-bottom: 1px solid var(--gray-900);
 		padding: 4px 1rem;
 	}
