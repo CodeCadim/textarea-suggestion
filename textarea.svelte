@@ -1,29 +1,46 @@
 <script>
-	let value = $state("");
-	let initialList = ["apple\nfraise", "banana", "pear", "cherry"];
+	import { onMount } from "svelte";
+
+	let { value = $bindable(), size, list } = $props();
+
 	let selection = $state(-1);
 	let show = $state(false);
+	let focused = $state();
+
+	let theList = [];
+	onMount(() => {
+		theList = Array.from(document.getElementById(list).options);
+	});
 
 	let suggestions = $derived.by(() => {
-		return initialList.filter((item) =>
-			item.toLowerCase().includes(value.toLowerCase()),
+		return theList.filter((item) =>
+			item.value.toLowerCase().includes(value.toLowerCase()),
 		);
 	});
-	const key = (k) => {
-		console.log(k.key);
-		if (k.key == "ArrowDown") {
+	const key = (ev) => {
+		if (!focused) return;
+		if (ev.key == "ArrowDown") {
 			if (value == "" && !show) show = true;
 			else if (suggestions != null && selection < suggestions.length - 1)
 				selection++;
-		} else if (k.key == "ArrowUp" && value != null && selection > 0)
+		} else if (ev.key == "ArrowUp" && value != null && selection > 0)
 			selection--;
-		else if (k.key == "Tab" && selection > -1) choose(selection);
-		else if (!show) show = true;
+		else if (
+			ev.key == "Enter" &&
+			suggestions.length > 0 &&
+			selection > -1 &&
+			show
+		) {
+			ev.preventDefault(); // avoid newline inserted
+			choose(selection);
+		} else {
+			selection = 0;
+			show = true;
+		}
 	};
 
 	const choose = (idx) => {
-		console.log("DEBUG choose", idx);
-		value = suggestions[idx];
+		value = suggestions[idx].value;
 		exit();
 	};
 
@@ -33,39 +50,50 @@
 	};
 </script>
 
-<pre>DEBUG:
-value={value}
-currentSelection:{selection}
-suggestionsList.length:{suggestions && suggestions.length}
-</pre>
-
-<main>
-	<textarea bind:value onkeydown={key}></textarea>
+<div class="elem" style="width: {size}rem">
+	<textarea bind:value onkeydown={key} bind:focused onblur={exit}></textarea>
 	{#if show}
-		<div class="suggestions">
+		<div class="suggestions" tabindex="-1">
 			{#each suggestions as item, idx}
-				<pre
+				<button
+					class="choice"
 					class:selected={idx == selection}
-					onclick={() => choose(idx)}>{item}</pre>
+					onmousedown={() => choose(idx)}
+				>
+					{item.value}
+				</button>
 			{/each}
 		</div>
 	{/if}
-</main>
+</div>
 
 <style>
-	main {
+	.elem {
 		position: relative;
+	}
+	textarea {
+		width: 100%;
+		padding: 0.5rem;
 	}
 	.suggestions {
 		position: absolute;
-		background-color: var(--gray-300);
+		z-index: 99999;
+		color: lightslategray;
+		background-color: lightgray;
+		display: flex;
+		flex-direction: column;
+		width: 100%;
 	}
-	.suggestions pre {
+	.suggestions .choice {
 		cursor: pointer;
-		border-bottom: 1px solid var(--gray-900);
+		min-width: 100%;
+		border-bottom: 1px solid gray;
+		border-radius: 0;
 		padding: 4px 1rem;
+		text-align: left;
 	}
-	.suggestions pre.selected {
-		background-color: var(--gray-100);
+	.suggestions .choice.selected {
+		color: lightgray;
+		background-color: lightslategray;
 	}
 </style>
